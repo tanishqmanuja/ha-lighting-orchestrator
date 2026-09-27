@@ -15,9 +15,27 @@ then actually checks they match. The dashboard tells you the result:
 
 ## Installation
 
-1. Install via HACS (custom repository) or copy `custom_components/halo` to `<config>/custom_components/halo`.
-2. Restart Home Assistant.
-3. Settings → Devices & Services → Add Integration → **HALO**, or click the badge above.
+### HACS
+
+Install via [HACS](https://hacs.xyz) by searching for
+`ha-lighting-orchestrator` in the integrations section, or simply click
+the button below. If search doesn't find it yet, add the repository URL
+as a custom repository in HACS first.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tanishqmanuja&repository=ha-lighting-orchestrator&category=integration)
+
+### Manual
+
+Clone the repository and copy the `custom_components` folder to your
+Home Assistant config folder, then restart:
+
+```sh
+git clone https://github.com/tanishqmanuja/ha-lighting-orchestrator.git
+cp -r ha-lighting-orchestrator/custom_components config/
+```
+
+Then: Settings → Devices and Services → Add Integration → **HALO**,
+or click the badge at the top of this page.
 
 Requires Home Assistant 2026.3+ (local brand images).
 
