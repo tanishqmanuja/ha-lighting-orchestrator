@@ -35,8 +35,6 @@ cp -r ha-lighting-orchestrator/custom_components config/
 Then: Settings → Devices and Services → Add Integration → **HALO**,
 or click the badge at the top of this page.
 
-Requires Home Assistant 2026.3+ (local brand images).
-
 ## 🚀 Quick start
 
 1. Add an entry per area: pick the HA area, list its moods (for example `evening, movie`).
