@@ -1,0 +1,27 @@
+{
+  "name": "halo-panel",
+  "version": "0.6.0",
+  "private": true,
+  "description": "HALO sidebar panel (React). Build output is committed to custom_components/halo/frontend/halo-panel.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-form": "^1.33.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sonner": "^2.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "happy-dom": "^20.14.5",
+    "typescript": "^5.5.3",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.0"
+  }
+}

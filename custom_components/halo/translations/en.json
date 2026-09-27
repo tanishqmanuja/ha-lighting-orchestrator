@@ -1,0 +1,102 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This area is already configured"
+    },
+    "step": {
+      "user": {
+        "title": "HALO area",
+        "description": "One entry per user-defined area.",
+        "data": {
+          "area_id": "Area",
+          "area_name": "Friendly name"
+        }
+      },
+      "moods": {
+        "title": "Moods",
+        "description": "Comma-separated moods for this area. Map each mood to scenes/scripts afterwards (HALO panel or Configure).",
+        "data": {
+          "moods": "Moods",
+          "transition": "Default transition (s)",
+          "settle": "Default settle / grace (s)",
+          "debounce": "Default debounce (s)",
+          "tolerance": "Default tolerance"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HALO options",
+        "description": "Configured moods: {moods}",
+        "menu_options": {
+          "mood": "Edit a mood",
+          "add_mood": "Add a mood",
+          "done": "Done"
+        }
+      },
+      "mood": {
+        "title": "Pick a mood",
+        "description": "Choose which mood to edit.",
+        "data": {
+          "mood": "Mood"
+        }
+      },
+      "edit_mood": {
+        "title": "Edit mood",
+        "description": "Each mood is a preset list plus one designated default preset.",
+        "data": {
+          "default_preset": "Default preset (bare mood requests land here)",
+          "post_action": "Post script (runs when this mood becomes active, optional)",
+          "tracked_entities (csv, empty=auto)": "Tracked entities (comma-separated, empty = auto)",
+          "transition": "Transition (s)",
+          "settle": "Settle / grace (s)",
+          "debounce": "Debounce (s)",
+          "tolerance": "Tolerance",
+          "ignore_attrs (csv)": "Ignored attributes (comma-separated)",
+          "ignore_unavailable": "Ignore unavailable entities",
+          "presets (`base=scene.x, party=script.y@off`, at least one)": "Presets (name=scene.x/script.y, comma-separated)"
+        },
+        "error": {
+          "need_preset": "Map at least one preset.",
+          "bad_default": "Default preset must be one of the presets above.",
+          "bad_post": "Post script must look like script.x."
+        }
+      },
+      "add_mood": {
+        "title": "Add a mood",
+        "description": "Create a mood, optionally with presets already mapped.",
+        "data": {
+          "mood": "Mood name",
+          "default_preset": "Default preset (bare mood requests land here)",
+          "post_action": "Post script (runs when this mood becomes active, optional)",
+          "transition": "Transition (s)",
+          "settle": "Settle / grace (s)",
+          "debounce": "Debounce (s)",
+          "tolerance": "Tolerance",
+          "ignore_attrs": "Ignored attributes (comma-separated)",
+          "ignore_unavailable": "Ignore unavailable entities",
+          "presets (`base=scene.x, party=script.y@off`, at least one)": "Presets (name=scene.x/script.y, comma-separated)"
+        },
+        "error": {
+          "need_preset": "Map at least one preset.",
+          "bad_default": "Default preset must be one of the presets above.",
+          "bad_post": "Post script must look like script.x."
+        }
+      },
+      "done": {
+        "title": "Done",
+        "description": "Configuration saved."
+      }
+    }
+  },
+  "select": {
+    "mood": {
+      "name": "Mood"
+    },
+    "preset": {
+      "name": "Preset"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+apply_mood:
+  name: Apply mood
+  description: Request a mood+preset for an area (single source of input).
+  fields:
+    area:
+      name: Area key
+      description: HALO area key (falls back to all areas if omitted).
+      required: false
+      selector:
+        text:
+    mood:
+      name: Mood
+      required: true
+      selector:
+        text:
+    preset:
+      name: Preset
+      required: false
+      selector:
+        text:
+    homewide:
+      name: Respect locks
+      required: false
+      selector:
+        boolean:
+resync:
+  name: Resync
+  description: Re-apply requested mood to clear manual custom drift.
+  fields:
+    area:
+      name: Area key
+      required: false
+      selector:
+        text:
