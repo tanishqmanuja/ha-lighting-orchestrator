@@ -10,7 +10,9 @@ export interface HassEntity {
 
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
-  callService(
+  themes?: {
+    darkMode?: boolean;
+  };  callService(
     domain: string,
     service: string,
     data?: Record<string, unknown>

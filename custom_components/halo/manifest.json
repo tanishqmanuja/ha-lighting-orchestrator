@@ -3,7 +3,9 @@
     "@tanishqmanuja"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/tanishqmanuja/ha-lighting-orchestrator",
   "domain": "halo",
   "iot_class": "calculated",

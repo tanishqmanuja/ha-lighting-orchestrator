@@ -127,6 +127,28 @@ export function isDefaultPreset(
   return presets[0] === preset;
 }
 
+export function isDarkMode(hass: {
+  themes?: { darkMode?: boolean };
+}): boolean {
+  const flag = hass.themes?.darkMode;
+  if (typeof flag === "boolean") return flag;
+  if (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function"
+  ) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  return false;
+}
+
+export function brandMarkSrc(hass: {
+  themes?: { darkMode?: boolean };
+}): string {
+  return isDarkMode(hass)
+    ? "/halo_static/halo-mark.png"
+    : "/halo_static/halo-mark-dark.png";
+}
+
 export type PanelView =
   | { name: "areas" }
   | { name: "manage"; area: string; mood: string | null };

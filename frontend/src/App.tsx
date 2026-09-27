@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Toaster } from "sonner";
 import type { HomeAssistant } from "./ha-types";
 import {
+  brandMarkSrc,
   discoverAreas,
   parseRoute,
   routeHref,
@@ -85,7 +86,7 @@ export function App({ hass }: { hass: HomeAssistant }) {
             <div className="page-title">
               <img
                 className="brand-mark"
-                src="/halo_static/halo-mark.png"
+                src={brandMarkSrc(hass)}
                 alt="HALO"
               />
               <div>

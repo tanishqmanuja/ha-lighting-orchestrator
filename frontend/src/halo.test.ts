@@ -5,7 +5,9 @@ import {
   asDefaults,
   asMapping,
   asStatus,
+  brandMarkSrc,
   discoverAreas,
+  isDarkMode,
   isDefaultPreset,
   parseRoute,
   routeHref,
@@ -166,5 +168,29 @@ describe("panel routes", () => {
     expect(
       sameView({ name: "areas" }, { name: "manage", area: "a", mood: null })
     ).toBe(false);
+  });
+});
+
+describe("brand mark", () => {
+  it("picks the mark from the HA theme flag first", () => {
+    expect(brandMarkSrc({ themes: { darkMode: true } })).toBe(
+      "/halo_static/halo-mark.png"
+    );
+    expect(brandMarkSrc({ themes: { darkMode: false } })).toBe(
+      "/halo_static/halo-mark-dark.png"
+    );
+  });
+
+  it("falls back to matchMedia without a theme flag", () => {
+    const g = globalThis as Record<string, unknown>;
+    const prev = g.window;
+    g.window = { matchMedia: () => ({ matches: true }) };
+    try {
+      expect(isDarkMode({})).toBe(true);
+      expect(brandMarkSrc({})).toBe("/halo_static/halo-mark.png");
+    } finally {
+      if (prev === undefined) delete g.window;
+      else g.window = prev;
+    }
   });
 });

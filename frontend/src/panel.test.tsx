@@ -49,6 +49,7 @@ function fakeHass(): HomeAssistant & { calls: unknown[] } {
   const hass: HomeAssistant & { calls: unknown[]; wsCalls: unknown[] } = {
     calls,
     wsCalls,
+    themes: { darkMode: false },
     states: {
       "select.halo_living_room_mood": {
         entity_id: "select.halo_living_room_mood",
@@ -489,7 +490,22 @@ describe("<halo-panel>", () => {
       "img.brand-mark"
     ) as HTMLImageElement | null;
     expect(img).not.toBeNull();
-    expect(img!.getAttribute("src")).toBe("/halo_static/halo-mark.png");
+    expect(img!.getAttribute("src")).toBe("/halo_static/halo-mark-dark.png");
+  });
+
+  it("shows the light mark in dark mode", async () => {
+    const hass = fakeHass();
+    hass.themes = { darkMode: true };
+    const el = document.createElement("halo-panel") as HTMLElement & {
+      hass: HomeAssistant;
+    };
+    document.body.appendChild(el);
+    el.hass = hass;
+    await tick();
+    const img = el.querySelector(
+      "img.brand-mark"
+    ) as HTMLImageElement | null;
+    expect(img?.getAttribute("src")).toBe("/halo_static/halo-mark.png");
   });
 
   it("editor separates presets from verification with headings", async () => {
