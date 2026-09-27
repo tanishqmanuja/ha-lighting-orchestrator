@@ -1,5 +1,7 @@
 # HALO — Home Assistant Lighting Orchestrator
 
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=halo)
+
 One input per area. Verified states, never assumed ones.
 
 HALO gives every area **moods** (evening, movie, party…) each with its own
