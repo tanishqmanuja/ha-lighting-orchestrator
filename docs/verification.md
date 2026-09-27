@@ -40,5 +40,7 @@ how strict that loop is.
   targets. You get a free-form action with a strict check.
 
 Scene targets come straight from `scenes.yaml`, compared attribute by
-attribute with your tolerance and ignore rules. Script snapshots are
+attribute with your tolerance and ignore rules. HALO re-reads the file
+whenever it changes, so editing a scene takes effect on the next check
+with no re-saving and no restart. Script snapshots are
 learned on first apply and stored per area.

@@ -119,6 +119,7 @@ class HaloArea:
         self._apply_lock = asyncio.Lock()
         self._post_seq = 0
         self._yaml_snapshot_keys: set[tuple[str, str]] = set()
+        self._scenes_mtime: float | None = None
         self._remove_state_listener = None
 
     # -- entity refresh plumbing --
@@ -188,7 +189,7 @@ class HaloArea:
             del self.engine.snapshots[key]
         await self._save()
 
-    async def _import_scenes_yaml(self) -> None:
+    async def _import_scenes_yaml(self) -> int:
         import yaml
 
         path = self.hass.config.path("scenes.yaml")
@@ -208,9 +209,17 @@ class HaloArea:
 
         docs = await self.hass.async_add_executor_job(_read)
         if docs is None:
-            return
+            return 0
         if not isinstance(docs, list):
-            return
+            return 0
+        try:
+            import os
+
+            self._scenes_mtime = await self.hass.async_add_executor_job(
+                os.path.getmtime, path
+            )
+        except OSError:
+            pass
         by_id = {str(s.get("id")): s for s in docs if isinstance(s, dict)}
         for (mood, preset), t in self.engine.targets.items():
             # Reference scenes verify script outcomes: the expected snapshot
@@ -262,6 +271,61 @@ class HaloArea:
                 self._yaml_snapshot_keys.add((mood, preset))
                 if not t.get("tracked"):
                     t["tracked"] = sorted(snap.keys())
+        self._subscribe_members()
+        return len(self._yaml_snapshot_keys)
+
+    def _tracked_entity_ids(self) -> set[str]:
+        seen: set[str] = set()
+        for t in self.engine.targets.values():
+            seen.update(t.get("tracked", []))
+        for snap in self.engine.snapshots.values():
+            seen.update(snap.keys())
+        return seen
+
+    @callback
+    def _subscribe_members(self) -> None:
+        """(Re)subscribe manual-change detection to all tracked entities."""
+        if self._remove_state_listener:
+            self._remove_state_listener()
+            self._remove_state_listener = None
+        tracked = self._tracked_entity_ids()
+        if tracked:
+            self._remove_state_listener = evt.async_track_state_change_event(
+                self.hass, list(tracked), self._member_changed
+            )
+
+    async def _maybe_refresh_scenes_yaml(self) -> None:
+        """Re-import scenes.yaml if it changed since the last read.
+
+        Scene edits (UI or yaml) otherwise stay invisible until something
+        forces an entry reload. Cheap mtime check; full re-import plus
+        listener refresh only on change.
+        """
+        import os
+
+        path = self.hass.config.path("scenes.yaml")
+        try:
+            mtime = await self.hass.async_add_executor_job(
+                os.path.getmtime, path
+            )
+        except OSError:
+            return
+        if self._scenes_mtime is not None and mtime <= self._scenes_mtime:
+            return
+        before = {
+            k: v for k, v in self.engine.snapshots.items()
+            if k in self._yaml_snapshot_keys
+        }
+        count = await self._import_scenes_yaml()
+        after = {
+            k: v for k, v in self.engine.snapshots.items()
+            if k in self._yaml_snapshot_keys
+        }
+        if before != after:
+            _LOGGER.debug(
+                "HALO[%s] scenes.yaml changed; refreshed %d scene snapshot(s)",
+                self.area_key, count,
+            )
 
     async def _save(self) -> None:
         data = {
@@ -361,6 +425,10 @@ class HaloArea:
         if seq != self.engine.request_seq:
             # superseded by a newer (quick/double) request: stay silent.
             return
+        # Scene edits land here without any re-save: refresh snapshots
+        # (and tracking) before judging, so the check always uses the
+        # current scene definition.
+        await self._maybe_refresh_scenes_yaml()
         action_known = self.hass.states.get(
             (self.engine.targets.get(key) or {}).get("action", "")
         ) is not None
@@ -460,6 +528,7 @@ class HaloArea:
             # don't fight an ongoing settle window
             if time.monotonic() - self.engine.last_transition_ts < tune.settle:
                 return
+            await self._maybe_refresh_scenes_yaml()
             changed = self.engine.apply_decision(self.live_states())
             if changed:
                 self.hass.bus.async_fire("halo_active_changed", changed)
@@ -489,16 +558,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_update_listener))
 
     # track member entities for manual-change -> custom detection
-    tracked: set[str] = set()
-    for t in area.engine.targets.values():
-        tracked.update(t.get("tracked", []))
-    for snap in area.engine.snapshots.values():
-        tracked.update(snap.keys())
-
-    if tracked:
-        area._remove_state_listener = evt.async_track_state_change_event(
-            hass, list(tracked), area._member_changed
-        )
+    # (idempotent; the scenes.yaml import above already subscribed once)
+    area._subscribe_members()
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
