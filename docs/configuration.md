@@ -1,30 +1,33 @@
 # Configuration reference
 
-Everything below lives per area, editable in the panel's Manage page or
-the entry's Configure dialog (same store).
+Everything here lives per area. Edit it in the panel's Manage page or in
+the entry's Configure dialog. Both write to the same store.
 
 ## Add entry
 
-Pick the HA area (or a custom key), a friendly name, and a comma-separated
-mood list. Fresh moods start with one unmapped `base` preset.
+Pick the HA area (or a custom key), give it a friendly name, and list
+its moods separated by commas. Fresh moods start with one unmapped
+`base` preset.
 
 ## Per mood
 
-- **Presets** (`base=scene.x, party=script.y@off`, at least one) —
-  comma-separated `name=action` pairs. The optional `@verify` suffix sets
-  the verify mode inline: `@off`, `@snapshot`, or `@scene.<id>`
-  (example above: the party preset trusts its script).
-- **Default preset** — must name one of the presets.
-- **Post script** (optional `script.*`) — runs once when the requested
-  mood verifies as current. See [Automations](automations.md).
-- **Tracked entities** (empty = auto) — which lights to verify. Empty
-  resolves from `scenes.yaml` for scenes; the editor's Autofill drafts
-  that set for editing.
-- **Transition / Settle / Debounce / Tolerance** — see
+- **Presets** (at least one, e.g. `base=scene.x, party=script.y@off`):
+  comma-separated `name=action` pairs. The optional `@verify` suffix
+  sets the verify mode inline (`@off`, `@snapshot`, or `@scene.<id>`).
+  The example above makes the party preset trust its script.
+- **Default preset:** has to name one of the presets above.
+- **Post script** (optional `script.*`): runs once when the requested
+  mood verifies as current.
+- **Tracked entities** (empty means auto): which lights get verified.
+  Left empty, scenes resolve from `scenes.yaml` automatically. The
+  editor's Autofill drafts that set so you can tweak it by hand.
+- **Transition / Settle / Debounce / Tolerance:** covered in
   [Verification](verification.md).
-- **Ignored attributes** — skipped in comparisons (e.g. `effect`).
-- **Ignore unavailable** — treat missing entities as unknown, not as
-  mismatches.
+- **Ignored attributes:** skipped in comparisons (handy for `effect` and
+  the like).
+- **Ignore unavailable:** treats missing entities as unknown instead of
+  counting them as mismatches.
 
-Validation is strict: unknown presets, bad entity ids, and bad verify
-values are rejected with messages instead of saved silently.
+Validation is strict on purpose. Unknown presets, bad entity ids, and
+bad verify values get rejected with a message instead of being saved
+quietly.

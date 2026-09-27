@@ -1,43 +1,41 @@
-# HALO — Home Assistant Lighting Orchestrator
+# HALO: Home Assistant Lighting Orchestrator
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=halo)
 
-One input per area. Verified states, never assumed ones.
+Most lighting automations are fire-and-forget: they call a scene and hope
+the room followed along. HALO works the other way. You pick a mood for an
+area, HALO runs your scenes or scripts, waits for the lights to settle,
+then actually checks they match. The dashboard tells you the result:
+`active`, still `transitioning`, or overridden by hand (`custom`).
 
-HALO gives every area **moods** (evening, movie, party…) each with its own
-**presets** (base, bright…). You pick a mood; HALO runs your scenes or
-scripts, waits for the lights to settle, then *checks* they actually match —
-and tells you whether the mood is `active`, still `transitioning`, or was
-overridden by hand (`custom`).
-
-- 🎯 **Single source of input** — two selects per area, everything else is read-only truth.
-- ✅ **Verified, not optimistic** — per-mood tolerance, settle, debounce and mismatch reporting.
-- 🧩 **Your scenes and scripts** — each preset maps to any `scene.*` or `script.*`, with per-preset verification modes.
-- 🖥️ **Sidebar panel** — area cards, live status, and in-page mapping management that looks like native Home Assistant.
+- One place to ask: two selects per area, everything else is read-only.
+- Proof instead of optimism: per-mood tolerance, settle, debounce, and mismatch reporting.
+- Your own scenes and scripts: every preset points at any `scene.*` or `script.*`, with its own verification mode.
+- A sidebar panel that feels like the rest of Home Assistant: area cards, live status, and mapping management right on the page.
 
 ## Installation
 
 1. Install via HACS (custom repository) or copy `custom_components/halo` to `<config>/custom_components/halo`.
 2. Restart Home Assistant.
-3. Settings → Devices & Services → Add Integration → **HALO**.
+3. Settings → Devices & Services → Add Integration → **HALO**, or click the badge above.
 
 Requires Home Assistant 2026.3+ (local brand images).
 
 ## Quick start
 
-1. Add an entry per area: pick the HA area, list its moods (e.g. `evening, movie`).
-2. Map each mood: sidebar **HALO** → **Manage** on the area card (or the entry's Configure). Example preset: `base = scene.living_evening_base`. Pick which preset is the default.
-3. Pick a mood on the card (or the `select.halo_<area>_mood` entity). Status goes `transitioning`, then `active` once verified.
-4. Dim a light by hand: status flips to `custom` and names the drifted entity. **Resync** re-applies.
+1. Add an entry per area: pick the HA area, list its moods (for example `evening, movie`).
+2. Map each mood: open the sidebar **HALO** page, hit **Manage** on the area card (the entry's Configure dialog edits the same settings). A typical preset looks like `base = scene.living_evening_base`. Choose which preset is the default.
+3. Pick a mood on the card (or through the `select.halo_<area>_mood` entity). The status reads `transitioning`, then flips to `active` once the lights check out.
+4. Dim a light by hand and watch the status flip to `custom`, naming the drifted entity. **Resync** puts the requested mood back.
 
 ## Docs
 
-- [Concepts](docs/concepts.md) — areas, moods, presets, requested vs active.
-- [Verification](docs/verification.md) — transition, settle, debounce, tolerance, verify modes.
-- [Panel](docs/panel.md) — sidebar UI, Manage page, routes.
-- [Configuration](docs/configuration.md) — options-flow reference.
-- [Automations](docs/automations.md) — services, events, YAML examples, post scripts.
+- [Concepts](docs/concepts.md): areas, moods, presets, requested vs active.
+- [Verification](docs/verification.md): transition, settle, debounce, tolerance, verify modes.
+- [Panel](docs/panel.md): sidebar UI, Manage page, routes.
+- [Configuration](docs/configuration.md): options-flow reference.
+- [Automations](docs/automations.md): services, events, YAML examples, post scripts.
 - [Troubleshooting](docs/troubleshooting.md)
-- [Development](docs/development.md) — tests, dev stack, frontend build.
+- [Development](docs/development.md): tests, dev stack, frontend build.
 
 MIT licensed. Issues and PRs welcome.

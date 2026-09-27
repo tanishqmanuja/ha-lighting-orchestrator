@@ -2,45 +2,46 @@
 
 ## Area
 
-One HALO config entry per user-defined area (usually an HA area, but any
-key works). Each area owns its moods, its selects, and its sensors. Areas
-never interfere with each other.
+One HALO entry per area you care about. Usually that is a Home Assistant
+area, but any key works. Each area owns its moods, its selects, and its
+sensors, and areas never step on each other.
 
 ## Mood
 
 A high-level scene for an area: `evening`, `movie`, `party`. Moods are
-just names — what they *do* is defined entirely by their presets.
+just names. What they actually do is defined entirely by their presets.
 
 ## Preset
 
-A concrete variant of a mood that maps to something runnable: any
-`scene.*` or `script.*` entity. Each mood has its own preset list with at
-least one entry:
+A concrete variant of a mood that points at something runnable: any
+`scene.*` or `script.*` entity. Each mood keeps its own preset list with
+at least one entry:
 
 - `base = scene.living_evening_base`
 - `bright = script.living_boost`
 
-Preset names are free-form per mood; nothing forces every mood to share
-the same set.
+Preset names are free-form, and moods don't have to share the same set.
 
 ## Default preset
 
-The preset a bare mood request resolves to. Set it per mood — usually
-`base`, but designating `party` pivots the whole mood. Resolution order
-for an empty request: your pick → `base` → legacy `default` → first.
+The preset a bare mood request falls back to. You set it per mood.
+`base` is the usual choice, but designating `party` pivots the whole
+mood. When no preset is given, HALO tries your pick first, then `base`,
+then a legacy `default`, then whatever comes first.
 
 ## Requested vs active
 
-Two selects are the **only writable inputs** (`select.halo_<area>_mood`,
-`select.halo_<area>_preset`). Everything else reports truth:
+Two selects are the only things you can write to
+(`select.halo_<area>_mood`, `select.halo_<area>_preset`). Everything else
+just reports what is true right now:
 
-- `sensor.halo_<area>_active_mood` / `_active_preset` — what the lights
-  actually match right now (or `custom`).
-- `sensor.halo_<area>_status` — one of:
-  - `active` — the lights match a known mood (requested or otherwise).
-  - `transitioning` — a request is in flight, inside its settle window.
-  - `custom` — nothing matches. Someone changed lights outside HALO.
-    The engine never rewrites your selects; it only reports.
+- `sensor.halo_<area>_active_mood` / `_active_preset`: what the lights
+  currently match, or `custom` if they match nothing HALO knows.
+- `sensor.halo_<area>_status`: one of three states.
+  - `active`: the lights match a known mood, requested or otherwise.
+  - `transitioning`: a request is still in flight, inside its settle window.
+  - `custom`: nothing matches, so somebody changed lights outside HALO.
+    The engine never rewrites your selects over this. It only reports.
 
 The status sensor also carries `mismatched_entities`, the full `mapping`
-(mood → preset → action), `default_presets`, and `area_name`.
+of mood to preset to action, `default_presets`, and `area_name`.
