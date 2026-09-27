@@ -5,8 +5,10 @@ import {
   areaDisplayName,
   asDefaults,
   asMapping,
+  asMismatchDetails,
   asStatus,
   asStringArray,
+  driftLines,
   isDefaultPreset,
   moodEntityId,
   presetEntityId,
@@ -54,6 +56,7 @@ export function AreaCard({ hass, area, onManage }: AreaCardProps) {
   const reqMood = mood?.state ?? null;
   const reqPreset = preset?.state ?? null;
   const mismatched = asStringArray(status?.attributes.mismatched_entities);
+  const drift = driftLines(mismatched, asMismatchDetails(status?.attributes.mismatch_details));
   const mapping = asMapping(status?.attributes.mapping);
   const defaults = asDefaults(status?.attributes.default_presets);
 
@@ -228,10 +231,10 @@ export function AreaCard({ hass, area, onManage }: AreaCardProps) {
         </Button>
       </div>
 
-      {mismatched.length > 0 && (
+      {drift.length > 0 && (
         <div className="drift">
           <span className="drift-title">Manual changes detected</span>
-          <span className="drift-list">{mismatched.join(", ")}</span>
+          <span className="drift-list">{drift.join(" · ")}</span>
         </div>
       )}
     </Card>

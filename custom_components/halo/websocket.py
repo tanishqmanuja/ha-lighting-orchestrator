@@ -329,6 +329,13 @@ def _handle_delete_mood(hass, connection, msg: dict[str, Any]) -> None:
         return
     del moods[mood]
     _persist_moods(hass, area, moods)
+    # Drop its learned snapshots too: a deleted mood must not keep voting
+    # in active-mood decisions via stale learned states.
+    stale = [k for k in area.engine.snapshots if k[0] == mood]
+    for k in stale:
+        del area.engine.snapshots[k]
+    if stale:
+        hass.async_create_task(area._save())
     connection.send_result(msg["id"], {"deleted": mood})
 
 

@@ -100,6 +100,8 @@ class HaloStatusSensor(_Base):
             "requested_mood": e.requested_mood,
             "requested_preset": e.requested_preset,
             "mismatched_entities": e.mismatched,
+            # Exact per-attribute diffs: {entity: {attr: [expected, actual]}}.
+            "mismatch_details": e.mismatch_details,
             # What each preset actually triggers (scene.* / script.*).
             # The panel renders this; native HA cannot.
             "mapping": mapping,

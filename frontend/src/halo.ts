@@ -54,6 +54,33 @@ export function asStringArray(value: unknown): string[] {
     : [];
 }
 
+/** entity -> attr -> [expected, actual], from the status sensor. */
+export type MismatchDetails = Record<string, Record<string, unknown>>;
+
+export function asMismatchDetails(value: unknown): MismatchDetails {
+  if (typeof value !== "object" || value === null) return {};
+  const out: MismatchDetails = {};
+  for (const [entity, attrs] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof attrs === "object" && attrs !== null) {
+      out[entity] = attrs as Record<string, unknown>;
+    }
+  }
+  return out;
+}
+
+/** "light.x (brightness, rgb_color)" lines for the drift display. */
+export function driftLines(
+  mismatched: string[],
+  details: MismatchDetails
+): string[] {
+  const entities =
+    mismatched.length > 0 ? mismatched : Object.keys(details);
+  return entities.map((entity) => {
+    const attrs = Object.keys(details[entity] ?? {});
+    return attrs.length > 0 ? `${entity} (${attrs.join(", ")})` : entity;
+  });
+}
+
 export function asStatus(value: unknown): HaloStatus {
   return value === "active" || value === "transitioning"
     ? value

@@ -4,9 +4,11 @@ import {
   areaDisplayName,
   asDefaults,
   asMapping,
+  asMismatchDetails,
   asStatus,
   brandMarkSrc,
   discoverAreas,
+  driftLines,
   isDarkMode,
   isDefaultPreset,
   parseRoute,
@@ -192,5 +194,21 @@ describe("brand mark", () => {
       if (prev === undefined) delete g.window;
       else g.window = prev;
     }
+  });
+});
+
+describe("mismatch details", () => {
+  it("parses the details map and renders drift lines", () => {
+    expect(asMismatchDetails(null)).toEqual({});
+    expect(asMismatchDetails({ "light.x": "nope" })).toEqual({});
+    const details = asMismatchDetails({
+      "light.x": { brightness: [100, 40] },
+    });
+    expect(driftLines(["light.x"], details)).toEqual([
+      "light.x (brightness)",
+    ]);
+    // falls back to entity-only lines without details
+    expect(driftLines(["light.y"], {})).toEqual(["light.y"]);
+    expect(driftLines([], {})).toEqual([]);
   });
 });

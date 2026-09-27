@@ -79,6 +79,84 @@ def entity_matches(
     return True, False
 
 
+def diff_entity(
+    expected: dict[str, Any],
+    actual_state: str | None,
+    actual_attrs: dict[str, Any],
+    *,
+    tolerance: float = 1.0,
+    ignore_attrs: list[str] | set[str] | tuple = (),
+    ignore_unavailable: bool = True,
+) -> dict[str, list]:
+    """Per-attribute differences for one entity.
+
+    Returns {attr: [expected, actual]} for every compared value that
+    differs. Empty means match (or unknown-but-ignored). Mirrors
+    entity_matches exactly, so the two can never disagree.
+    """
+    ignore = set(ignore_attrs or ())
+    diffs: dict[str, list] = {}
+    exp_state = expected.get("state")
+
+    if actual_state in (None, "unavailable", "unknown", ""):
+        if ignore_unavailable:
+            return {}
+        return {"state": [exp_state, actual_state]}
+
+    if exp_state is not None and actual_state != exp_state:
+        # State mismatch dominates; attrs are meaningless across on/off.
+        return {"state": [exp_state, actual_state]}
+
+    for key, exp_val in expected.items():
+        if key == "state" or key in ignore:
+            continue
+        act_val = actual_attrs.get(key)
+        if act_val is None:
+            if ignore_unavailable:
+                continue
+            diffs[key] = [exp_val, None]
+            continue
+        if isinstance(exp_val, (list, tuple)):
+            if not _seq_close(exp_val, act_val, tolerance):
+                diffs[key] = [list(exp_val), act_val]
+        elif isinstance(exp_val, (int, float)):
+            if not _num_close(exp_val, act_val, tolerance):
+                diffs[key] = [exp_val, act_val]
+        else:
+            if exp_val != act_val:
+                diffs[key] = [exp_val, act_val]
+    return diffs
+
+
+def diff_snapshot(
+    expected_map: dict[str, dict[str, Any]],
+    states: dict[str, tuple[str | None, dict[str, Any]]],
+    *,
+    tolerance: float = 1.0,
+    ignore_attrs: list[str] | set[str] | tuple = (),
+    ignore_unavailable: bool = True,
+) -> dict[str, dict[str, list]]:
+    """Per-entity diffs for a snapshot: {entity_id: {attr: [exp, act]}}."""
+    out: dict[str, dict[str, list]] = {}
+    for entity_id, expected in expected_map.items():
+        actual = states.get(entity_id)
+        if actual is None:
+            if not ignore_unavailable:
+                out[entity_id] = {"state": [expected.get("state"), None]}
+            continue
+        diff = diff_entity(
+            expected,
+            actual[0],
+            actual[1],
+            tolerance=tolerance,
+            ignore_attrs=ignore_attrs,
+            ignore_unavailable=ignore_unavailable,
+        )
+        if diff:
+            out[entity_id] = diff
+    return out
+
+
 def snapshot_matches(
     expected_map: dict[str, dict[str, Any]],
     states: dict[str, tuple[str | None, dict[str, Any]]],

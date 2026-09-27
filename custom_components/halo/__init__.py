@@ -118,6 +118,7 @@ class HaloArea:
         self._debounce_task: asyncio.Task | None = None
         self._apply_lock = asyncio.Lock()
         self._post_seq = 0
+        self._yaml_snapshot_keys: set[tuple[str, str]] = set()
         self._remove_state_listener = None
 
     # -- entity refresh plumbing --
@@ -198,6 +199,12 @@ class HaloArea:
                     return yaml.safe_load(f)
             except FileNotFoundError:
                 return None
+            except (OSError, yaml.YAMLError) as err:
+                _LOGGER.warning(
+                    "HALO[%s] cannot parse %s (%s); scene snapshots skipped",
+                    self.area_key, path, err,
+                )
+                return None
 
         docs = await self.hass.async_add_executor_job(_read)
         if docs is None:
@@ -231,6 +238,12 @@ class HaloArea:
                     scene = by_id[sid]
                     break
             if not scene:
+                _LOGGER.warning(
+                    "HALO[%s] scene '%s' for %s/%s not found in scenes.yaml; "
+                    "fill Tracked entities (Autofill helps) or fix the scene id, "
+                    "or this preset can never verify",
+                    self.area_key, slug, mood, preset,
+                )
                 continue
             entities = scene.get("entities") or {}
             snap: dict[str, dict[str, Any]] = {}
@@ -246,6 +259,7 @@ class HaloArea:
                 snap[eid] = sub
             if snap:
                 self.engine.snapshots[(mood, preset)] = snap
+                self._yaml_snapshot_keys.add((mood, preset))
                 if not t.get("tracked"):
                     t["tracked"] = sorted(snap.keys())
 
@@ -296,6 +310,12 @@ class HaloArea:
 
             tune: MoodTuning = target["tuning"]
             action: str = target["action"]
+            if self.hass.states.get(action) is None:
+                _LOGGER.error(
+                    "HALO[%s] action entity %s for %s/%s does not exist; "
+                    "check the mapping (scene renamed?)",
+                    self.area_key, action, mood, preset,
+                )
             domain, _, obj = action.partition(".")
             try:
                 if domain == "scene":
@@ -341,18 +361,34 @@ class HaloArea:
         if seq != self.engine.request_seq:
             # superseded by a newer (quick/double) request: stay silent.
             return
+        action_known = self.hass.states.get(
+            (self.engine.targets.get(key) or {}).get("action", "")
+        ) is not None
+        if not action_known and key in self.engine.snapshots:
+            # Heal snapshots learned from applies that could never verify
+            # (renamed/deleted scene or script): drop them unless they came
+            # from scenes.yaml, so the next apply starts honest.
+            if key not in self._yaml_snapshot_keys:
+                _LOGGER.warning(
+                    "HALO[%s] dropping stale snapshot for %s/%s; its action "
+                    "no longer exists",
+                    self.area_key, key[0], key[1],
+                )
+                del self.engine.snapshots[key]
+                await self._save()
         # learn live as expected ONLY where comparison needs it (see below).
         states = self.live_states()
         changed = self.engine.apply_decision(states)
         if changed:
             self.hass.bus.async_fire("halo_active_changed", changed)
         # if requested still not matching but a scene snapshot exists, keep truth.
-        # Learn only where comparison needs it (scene-backed auto targets
-        # without a yaml snapshot); scripts and trusted targets never learn.
+        # Learn only where comparison needs it, and only from actions that
+        # resolve: learning arbitrary live states as truth is how phantom
+        # active/custom states are born.
         if (
             key not in self.engine.snapshots
             and states
-            and self.engine.should_learn(key)
+            and self.engine.should_learn(key, known_action=action_known)
         ):
             self.engine.learn_snapshot(key[0], key[1], states)
             changed2 = self.engine.apply_decision(states)

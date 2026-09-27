@@ -1,4 +1,5 @@
 """Unit tests for the websocket config API (no HA needed)."""
+import asyncio
 import importlib.util
 import sys
 from pathlib import Path
@@ -109,12 +110,22 @@ class _Entry:
         self.options = {}
 
 
+class _Engine:
+    def __init__(self):
+        self.snapshots = {}
+
+
 class _Area:
     def __init__(self):
         self.area_key = "living_room"
         self.area_name = "Living"
         self.lock_entity = None
         self.entry = _Entry()
+        self.engine = _Engine()
+        self.saved = 0
+
+    async def _save(self):
+        self.saved += 1
 
 
 class _States:
@@ -135,6 +146,10 @@ class _Hass:
         self.data = {"halo": {"eid1": _Area()}}
         self.states = _States()
         self.config_entries = _ConfigEntries()
+
+    def async_create_task(self, coro):
+        asyncio.run(coro)
+        return coro
 
 
 class _Conn:
@@ -188,12 +203,19 @@ def test_set_mood_rejects_non_admin_and_bad_payload():
 
 def test_delete_mood():
     hass = _Hass()
+    area = hass.data["halo"]["eid1"]
+    area.engine.snapshots[("evening", "base")] = {"light.x": {"state": "on"}}
+    area.engine.snapshots[("other", "base")] = {"light.y": {"state": "on"}}
     conn = _Conn()
     ws._handle_delete_mood(
         hass, conn, {"id": 5, "area": "living_room", "mood": "evening"}
     )
     assert conn.results[5] == {"deleted": "evening"}
     assert "evening" not in hass.config_entries.saved[0]["moods"]
+    # its snapshots go with it; other moods keep theirs; storage persisted
+    assert ("evening", "base") not in area.engine.snapshots
+    assert ("other", "base") in area.engine.snapshots
+    assert area.saved == 1
 
 
 def _write_scenes(tmp_path, docs):

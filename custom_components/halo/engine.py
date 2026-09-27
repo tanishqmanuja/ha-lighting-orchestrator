@@ -47,7 +47,7 @@ try:
         STATUS_TRANSITIONING,
         pick_default_preset,
     )
-    from .matcher import snapshot_matches
+    from .matcher import diff_snapshot, snapshot_matches
 except ImportError:  # loaded standalone in unit tests
     from const import (  # type: ignore[no-redef]
         CONF_DEBOUNCE,
@@ -68,7 +68,7 @@ except ImportError:  # loaded standalone in unit tests
         STATUS_TRANSITIONING,
         pick_default_preset,
     )
-    from matcher import snapshot_matches  # type: ignore[no-redef]
+    from matcher import diff_snapshot, snapshot_matches  # type: ignore[no-redef]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -134,6 +134,7 @@ class AreaEngine:
     active_preset: str = PRESET_NONE
     status: str = STATUS_CUSTOM
     mismatched: list[str] = field(default_factory=list)
+    mismatch_details: dict[str, dict[str, list]] = field(default_factory=dict)
     last_transition_ts: float = 0.0
     # Monotonic generation of the latest request. HA glue stamps settle /
     # debounce tasks with the seq at schedule time and drops them if a
@@ -202,13 +203,17 @@ class AreaEngine:
             mode == "auto" and self.is_script_target(mood, preset)
         )
 
-    def should_learn(self, key: tuple[str, str]) -> bool:
+    def should_learn(self, key: tuple[str, str], *, known_action: bool = True) -> bool:
         """Whether a settle may snapshot live states for this target.
 
-        Explicit snapshot mode always learns on first apply; auto learns
-        only for scene-backed targets missing their yaml snapshot. Trusted
-        and reference-compared targets never learn.
+        Explicit snapshot mode always learns on first apply (from a real
+        apply); auto learns only for scene-backed targets missing their
+        yaml snapshot. Trusted targets never learn. Learning from an
+        action that doesn't resolve would enshrine arbitrary live states
+        as truth, so unknown actions veto learning entirely.
         """
+        if not known_action:
+            return False
         if key in self.snapshots:
             return False
         mode = self.verify_for(key[0], key[1])["mode"]
@@ -285,6 +290,29 @@ class AreaEngine:
             return MOOD_CUSTOM, PRESET_NONE, STATUS_CUSTOM, mism
         return MOOD_CUSTOM, PRESET_NONE, STATUS_CUSTOM, []
 
+    def diff_requested(
+        self,
+        states: dict[str, tuple[str | None, dict[str, Any]]],
+    ) -> dict[str, dict[str, list]]:
+        """Per-attribute diffs of the requested mood vs live states.
+
+        Powers the panel's "why not active" display and the
+        `mismatch_details` sensor attribute. Empty when the request is
+        unknown or fully matches.
+        """
+        req = (self.requested_mood, self.requested_preset)
+        snap = self.snapshots.get(req) if req[0] else None
+        if not snap:
+            return {}
+        tune = self.tuning_for(req[0], req[1] or PRESET_NONE)
+        return diff_snapshot(
+            snap,
+            states,
+            tolerance=tune.tolerance,
+            ignore_attrs=tune.ignore_attrs,
+            ignore_unavailable=tune.ignore_unavailable,
+        )
+
     def apply_decision(
         self,
         states: dict[str, tuple[str | None, dict[str, Any]]],
@@ -295,6 +323,7 @@ class AreaEngine:
         mood, preset, status, mism = self.decide(states, now=now)
         self.active_mood, self.active_preset, self.status = mood, preset, status
         self.mismatched = mism
+        self.mismatch_details = self.diff_requested(states)
         if old != (mood, preset, status):
             return {
                 "area": self.area_key,

@@ -29,6 +29,8 @@ AreaEngine = _engine.AreaEngine
 MoodTuning = _engine.MoodTuning
 entity_matches = _matcher.entity_matches
 snapshot_matches = _matcher.snapshot_matches
+diff_entity = _matcher.diff_entity
+diff_snapshot = _matcher.diff_snapshot
 
 
 def test_exact_match_active():
@@ -127,3 +129,64 @@ def test_learn_snapshot_skips_null_attrs():
     assert eng.snapshots[("movie", PRESET_NONE)] == {
         "light.m": {"state": "on", "brightness": 26}
     }
+
+
+def test_diff_entity_names_failing_attrs():
+    assert diff_entity(
+        {"state": "on", "brightness": 100}, "on", {"brightness": 100}
+    ) == {}
+    assert diff_entity(
+        {"state": "on", "brightness": 100}, "on", {"brightness": 105},
+        tolerance=2.0,
+    ) == {"brightness": [100, 105]}
+    assert diff_entity(
+        {"state": "on", "rgb_color": [255, 0, 0]},
+        "on", {"rgb_color": [250, 0, 0]},
+    ) == {"rgb_color": [[255, 0, 0], [250, 0, 0]]}
+    assert diff_entity(
+        {"state": "on"}, "off", {}
+    ) == {"state": ["on", "off"]}
+    # ignored attrs never reported
+    assert diff_entity(
+        {"state": "on", "effect": "a"}, "on", {"effect": "b"},
+        ignore_attrs=["effect"],
+    ) == {}
+    # unknown-but-ignored reports nothing; strict reports state
+    assert diff_entity({"state": "on"}, "unavailable", {}) == {}
+    assert diff_entity(
+        {"state": "on"}, "unavailable", {}, ignore_unavailable=False
+    ) == {"state": ["on", "unavailable"]}
+
+
+def test_diff_snapshot_only_lists_mismatches():
+    out = diff_snapshot(
+        {
+            "light.ok": {"state": "on", "brightness": 10},
+            "light.bad": {"state": "on", "brightness": 10},
+        },
+        {
+            "light.ok": ("on", {"brightness": 10}),
+            "light.bad": ("on", {"brightness": 90}),
+        },
+    )
+    assert out == {"light.bad": {"brightness": [10, 90]}}
+
+
+def test_engine_tracks_mismatch_details():
+    eng = AreaEngine(area_key="living")
+    eng.targets[("evening", "default")] = {
+        "action": "scene.a", "tracked": ["light.x"],
+        "tuning": MoodTuning(settle=0.001),
+    }
+    eng.snapshots[("evening", "default")] = {
+        "light.x": {"state": "on", "brightness": 100}
+    }
+    eng.note_requested("evening", "default")
+    eng.last_transition_ts -= 100
+    eng.apply_decision({"light.x": ("on", {"brightness": 40})})
+    assert eng.status == STATUS_CUSTOM
+    assert eng.mismatched == ["light.x"]
+    assert eng.mismatch_details == {"light.x": {"brightness": [100, 40]}}
+    eng.apply_decision({"light.x": ("on", {"brightness": 100})})
+    assert eng.status == STATUS_ACTIVE
+    assert eng.mismatch_details == {}

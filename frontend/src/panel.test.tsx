@@ -726,6 +726,27 @@ describe("<halo-panel>", () => {
     expect(presets.default.verify).toBe("snapshot");
   });
 
+  it("drift line names the mismatching attributes", async () => {
+    const hass = fakeHass();
+    hass.states["sensor.halo_living_room_status"] = {
+      entity_id: "sensor.halo_living_room_status",
+      state: "custom",
+      attributes: {
+        mismatched_entities: ["light.living_main"],
+        mismatch_details: {
+          "light.living_main": { brightness: [128, 5] },
+        },
+      },
+    };
+    const el = document.createElement("halo-panel") as HTMLElement & {
+      hass: HomeAssistant;
+    };
+    document.body.appendChild(el);
+    el.hass = hass;
+    await tick();
+    expect(el.innerHTML).toContain("light.living_main (brightness)");
+  });
+
   it("manage opens a separate page with back navigation", async () => {
     const hass = fakeHass();
     const el = document.createElement("halo-panel") as HTMLElement & {
