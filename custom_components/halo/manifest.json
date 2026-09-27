@@ -1,4 +1,6 @@
 {
+  "domain": "halo",
+  "name": "Home Assistant Lighting Orchestrator",
   "codeowners": [
     "@tanishqmanuja"
   ],
@@ -7,12 +9,10 @@
     "http"
   ],
   "documentation": "https://github.com/tanishqmanuja/ha-lighting-orchestrator",
-  "domain": "halo",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/tanishqmanuja/ha-lighting-orchestrator/issues",
   "loggers": [
     "halo"
   ],
-  "name": "Home Assistant Lighting Orchestrator",
   "version": "2026.9.0"
 }

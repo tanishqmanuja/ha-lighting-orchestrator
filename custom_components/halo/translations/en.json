@@ -86,12 +86,14 @@
       "bad_post": "Post script must look like script.x."
     }
   },
-  "select": {
-    "mood": {
-      "name": "Mood"
-    },
-    "preset": {
-      "name": "Preset"
+  "entity": {
+    "select": {
+      "mood": {
+        "name": "Mood"
+      },
+      "preset": {
+        "name": "Preset"
+      }
     }
   }
 }
