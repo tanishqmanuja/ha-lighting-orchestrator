@@ -1,7 +1,5 @@
 # HALO: Home Assistant Lighting Orchestrator
 
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=halo)
-
 Most lighting automations are fire-and-forget: they call a scene and hope
 the room followed along. HALO works the other way. You pick a mood for an
 area, HALO runs your scenes or scripts, waits for the lights to settle,
