@@ -57,6 +57,14 @@ or click the badge at the top of this page.
 - [Troubleshooting](docs/troubleshooting.md)
 - [Development](docs/development.md): tests, dev stack, frontend build.
 
+## 🙏 Inspiration
+
+Special thanks to these awesome projects. HALO stands on their ideas:
+
+- [hass_mood_controller](https://github.com/ZeFish/hass_mood_controller) by ZeFish: the moods-and-presets hierarchy and central dispatch this engine grew out of.
+- [stateful_scenes](https://github.com/hugobloem/stateful_scenes) by hugobloem: tolerance, debounce, and transition-aware scene matching.
+- [scene_state](https://github.com/pszypowicz/scene_state) by pszypowicz: grace periods, binary active tracking, and mismatch reporting.
+
 ## 🍀 Show Your Support
 
 Give a ⭐️ if this project helped you!
