@@ -1,0 +1,135 @@
+# HALO: Home Assistant Lighting Orchestrator
+
+> Per-area lighting engine: moods → presets → your scenes/scripts, with
+> verified (not assumed) states. Repo: tanishqmanuja/ha-lighting-orchestrator.
+
+## What it is
+
+One config entry per user-defined area. The user picks a mood (+preset) via
+two selects (the single source of input). HALO runs the mapped `scene.*` /
+`script.*`, waits out the settle window, then compares live light states
+against expected snapshots and reports `active` / `transitioning` / `custom`
+(manual drift). Manual changes never rewrite the inputs; Resync re-applies.
+
+## Layout
+
+- `custom_components/halo/__init__.py`: setup, per-area `HaloArea` glue
+  (apply path, settle/debounce tasks, scene yaml import, panel + WS + services).
+- `custom_components/halo/engine.py`: framework-free state machine
+  (`AreaEngine.decide()`), unit-testable without HA.
+- `custom_components/halo/matcher.py`: pure state/attribute comparison
+  with tolerance, ignore lists.
+- `custom_components/halo/const.py`: domain, `CONF_*` keys, `normalize_*`
+  helpers, `pick_default_preset` chain.
+- `custom_components/halo/select.py`, `sensor.py`, `button.py`: entities.
+- `custom_components/halo/config_flow.py`: area entry + per-mood options.
+- `custom_components/halo/websocket.py`: `halo/config/*` API (sync handlers).
+- `custom_components/halo/translations/en.json` + `strings.json`: keep in sync.
+- `custom_components/halo/frontend/halo-panel.js`: committed Vite bundle,
+  served at `/halo_static/` with `?v=<manifest version>`.
+- `custom_components/halo/brand/`: `icon/logo(+@2x)` + `dark_*` variants.
+- `frontend/src/`: React 18 + TS panel source (`App`, `AreaCard`,
+  `ManagePage`, `MoodEditor`, `ui` kit, `halo.ts` pure helpers).
+- `tests/test_*.py`: pytest, HA-free via importlib file loading.
+- `.development/`: git-ignored Docker rig (HA + Mosquitto + e2e scripts).
+- `docs/`: user docs. This file is the agent entry point.
+
+## Concepts
+
+- **Area**: one config entry. Key examples: `living_room`.
+- **Mood**: a name (`evening`, `movie`). Holds presets + tuning + default.
+- **Preset**: `name -> scene.*|script.*` action. Every mood has >= 1.
+- **Default preset**: what a bare mood request resolves to. Chain:
+  designated → `base` → legacy `default` → first sorted.
+- **Requested** (selects, writable) vs **active** (sensors, read-only truth).
+
+## Entities per area (`halo_<area>_*`)
+
+- `select.<area>_mood`: input. Changing it requests that mood (keeps a
+  valid preset or falls back to the default).
+- `select.<area>_preset`: input. Options follow the requested mood.
+- `sensor.<area>_active_mood` / `_active_preset`: verified truth or `custom`.
+- `sensor.<area>_status`: `active|transitioning|custom`, attrs:
+  `mismatched_entities`, `mapping` (mood→preset→action), `default_presets`,
+  `area_name`, requested/active mirrors.
+- `button.<area>_resync`: re-apply the request.
+
+## Services (`halo.*`)
+
+- `apply_mood {area?, mood, preset?, homewide?}`: missing preset resolves
+  the default; unknown mood/preset logs a warning. `homewide` respects locks.
+- `resync {area?}`: re-apply; omit area for all areas.
+
+## Events
+
+- `halo_mood_applied {area, mood, preset, seq}`: every request.
+- `halo_active_changed {area, active_mood, active_preset, status, mismatched}`.
+- `halo_post_action {area, mood, preset, script}`: after a post script runs.
+
+## Websocket API (admin only)
+
+- `halo/config/get {area}` → `{area, area_name, lock, moods}` where each
+  mood is `{presets: {name: {action, verify}}, default_preset, post_action,
+  tracked_entities, transition, settle, debounce, tolerance, ignore_attrs,
+  ignore_unavailable}`.
+- `halo/config/set_mood {area, mood, config}`: same shape, but preset
+  values may be bare action strings (verify defaults to auto). Validates
+  strictly, writes entry options (entry auto-reloads).
+- `halo/config/delete_mood {area, mood}`.
+- `halo/config/suggest_tracked {area, actions}` → `{entities}` unioned
+  from `scenes.yaml` (scripts unresolvable).
+
+## Config model notes
+
+- Entry = `{area_id, area_name, moods}` in data, full moods map overridden
+  in options. `normalize_mood_cfg` migrates legacy shapes (mood-level
+  action → single `base` preset; repairs bad defaults).
+- Per-preset `verify`: `auto` | `snapshot` | `off` | `scene.<id>`.
+  Auto means same-scene for scenes, trust-apply for scripts.
+- Per-mood `post_action` (`script.*`): runs once per request after the
+  requested mood verifies active (sequence-guarded, failures logged).
+- Options-flow preset syntax: `name=action[@verify]`
+  (`party=script.y@off`); dialog + panel share the store.
+
+## Engine rules (non-obvious)
+
+- `decide()`: requested match → active; other full match → active (truth
+  wins); inside requested settle window → transitioning; past settle with
+  nothing matching → custom (or trusted-active for off / auto-script).
+- Learn snapshots only for scene-backed auto targets missing yaml, plus
+  explicit snapshot mode. Never for off/trust.
+- Stored snapshots: `.storage/halo.<area>` as `mood::preset` keys. On load,
+  stale keys (not in targets) are dropped, `none` keys migrate to the
+  default preset.
+- Overlapping requests serialize on a per-area lock; settle/debounce tasks
+  carry the request seq and go silent when superseded.
+- Scene snapshots come from `scenes.yaml` (id-or-name matching); learned
+  ones persist across restarts.
+
+## HA platform gotchas (learned the hard way)
+
+- Entry reload does NOT reimport integration modules: backend changes need
+  a full HA restart; bump manifest version so the panel `?v=` URL refreshes.
+- Websocket handlers must be SYNC (`async_handle` discards coroutines) and
+  every message key must be declared in the vol schema (`extra keys not
+  allowed`), including `id` handling via `send_result`/`send_error`.
+- hassfest demands: `http` in `dependencies` (static paths), manifest keys
+  as `domain, name`, then alphabetical; flow `error` strings at flow level
+  (`options.error`), entity names under `entity.<platform>`.
+- Panel lives in shadow DOM: styles must render inside the element tree
+  (never `document.head`); same for Sonner CSS (`?inline` import).
+- Custom `hass` prop on `<halo-panel>` may predate element upgrade; the
+  bridge folds own-props through the setter. Unmount roots on disconnect.
+
+## Dev and test
+
+- `python -m pytest tests/ -q`: pure unit tests.
+- `cd frontend && bun run test` (vitest) / `bun run build` (tsc + bundle).
+  Use `bun run`, never bare `bun test`. Node also works; Bun is canonical.
+- `.development/`: `docker compose -f compose.yaml up -d` (HA :8124 +
+  Mosquitto); `provision_discovery.py`, `e2e_setup_moods.py`,
+  `e2e_full.py`, `e2e_rapid.py`, `e2e_ws.py`, `check_logs.py`.
+- Releases: manual `Release` workflow bumps CalVer (`YYYY.M.patch`) in
+  `manifest.json`, tags, and changelogs. Validate (hassfest + HACS) runs
+  on pushes touching `custom_components/**`.
+- Conventional commits, atomic and green before push.
