@@ -1,0 +1,46 @@
+name: "Validate"
+
+on:
+  push:
+    branches:
+      - "main"
+      - "feat**"
+    tags-ignore:
+      - "**"
+    paths:
+      - "custom_components/**"
+      - "hacs.json"
+      - ".github/workflows/validate.yaml"
+  pull_request:
+    paths:
+      - "custom_components/**"
+      - "hacs.json"
+      - ".github/workflows/validate.yaml"
+
+jobs:
+  validate-hassfest:
+    runs-on: ubuntu-latest
+    name: "Hassfest"
+    steps:
+      - name: "Checkout the repository"
+        uses: actions/checkout@v6
+
+      - name: "Validate Hassfest"
+        uses: home-assistant/actions/hassfest@master
+
+  validate-hacs:
+    # HACS validation downloads hacs.json/manifest.json via unauthenticated
+    # raw.githubusercontent.com URLs, which 404 on private repos. Only run it
+    # where it can pass.
+    if: github.event.repository.visibility == 'public'
+    runs-on: ubuntu-latest
+    name: "HACS"
+    steps:
+      - name: "Checkout the repository"
+        uses: actions/checkout@v6
+
+      - name: "Validate HACS"
+        uses: hacs/action@main
+        with:
+          category: integration
+          ignore: brands

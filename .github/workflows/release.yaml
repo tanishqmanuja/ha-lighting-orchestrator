@@ -1,0 +1,63 @@
+name: "Release"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: "Release"
+    permissions:
+      contents: write
+    steps:
+      - name: "Checkout the repository"
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: "Setup Bun"
+        uses: oven-sh/setup-bun@v2
+
+      - name: "Bump CalVer version in manifest.json"
+        id: bump
+        run: |
+          NEW_VERSION=$(python3 - <<'EOF'
+          import datetime
+          import json
+
+          path = "custom_components/halo/manifest.json"
+          with open(path, encoding="utf-8") as f:
+              manifest = json.load(f)
+          now = datetime.datetime.now(datetime.timezone.utc)
+          prefix = f"{now.year}.{now.month}"
+          try:
+              year, month, patch = manifest["version"].split(".")
+              if f"{year}.{month}" == prefix:
+                  new = f"{prefix}.{int(patch) + 1}"
+              else:
+                  new = f"{prefix}.0"
+          except (ValueError, AttributeError, KeyError):
+              new = f"{prefix}.0"
+          manifest["version"] = new
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+          print(new)
+          EOF
+          )
+          echo "version=${NEW_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: "Commit, tag and push"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add custom_components/halo/manifest.json
+          git commit -m "chore: release ${{ steps.bump.outputs.version }}"
+          git tag "${{ steps.bump.outputs.version }}"
+          git push origin HEAD
+          git push origin "${{ steps.bump.outputs.version }}"
+
+      - name: "Generate changelog release"
+        run: bunx changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
