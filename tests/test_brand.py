@@ -3,7 +3,14 @@ import struct
 from pathlib import Path
 
 BRAND_DIR = Path(__file__).resolve().parents[1] / "custom_components" / "halo" / "brand"
-REQUIRED = ["icon.png", "logo.png", "icon@2x.png", "logo@2x.png"]
+REQUIRED = [
+    "icon.png",
+    "logo.png",
+    "icon@2x.png",
+    "logo@2x.png",
+    "dark_icon.png",
+    "dark_logo.png",
+]
 
 
 def _png_size(path: Path) -> tuple[int, int]:

@@ -1,4 +1,9 @@
-# HALO: Home Assistant Lighting Orchestrator
+<picture align="center">
+  <source media="(prefers-color-scheme: dark)" srcset="custom_components/halo/brand/dark_logo.png">
+  <img src="custom_components/halo/brand/logo.png" width="160" alt="HALO logo">
+</picture>
+
+# HALO // Home Assistant Lighting Orchestrator
 
 Most lighting automations are fire-and-forget: they call a scene and hope
 the room followed along. HALO works the other way. You pick a mood for an
