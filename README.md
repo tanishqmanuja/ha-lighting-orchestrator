@@ -13,7 +13,7 @@ then actually checks they match. The dashboard tells you the result:
 - Your own scenes and scripts: every preset points at any `scene.*` or `script.*`, with its own verification mode.
 - A sidebar panel that feels like the rest of Home Assistant: area cards, live status, and mapping management right on the page.
 
-## Installation
+## 📦 Installation
 
 ### HACS
 
@@ -39,14 +39,14 @@ or click the badge at the top of this page.
 
 Requires Home Assistant 2026.3+ (local brand images).
 
-## Quick start
+## 🚀 Quick start
 
 1. Add an entry per area: pick the HA area, list its moods (for example `evening, movie`).
 2. Map each mood: open the sidebar **HALO** page, hit **Manage** on the area card (the entry's Configure dialog edits the same settings). A typical preset looks like `base = scene.living_evening_base`. Choose which preset is the default.
 3. Pick a mood on the card (or through the `select.halo_<area>_mood` entity). The status reads `transitioning`, then flips to `active` once the lights check out.
 4. Dim a light by hand and watch the status flip to `custom`, naming the drifted entity. **Resync** puts the requested mood back.
 
-## Docs
+## 📚 Docs
 
 - [Concepts](docs/concepts.md): areas, moods, presets, requested vs active.
 - [Verification](docs/verification.md): transition, settle, debounce, tolerance, verify modes.
@@ -56,4 +56,6 @@ Requires Home Assistant 2026.3+ (local brand images).
 - [Troubleshooting](docs/troubleshooting.md)
 - [Development](docs/development.md): tests, dev stack, frontend build.
 
-MIT licensed. Issues and PRs welcome.
+## 🍀 Show Your Support
+
+Give a ⭐️ if this project helped you!
