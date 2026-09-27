@@ -9,6 +9,12 @@ from __future__ import annotations
 
 from typing import Any
 
+# Metadata attributes that can never meaningfully verify lighting output.
+# friendly_name changes on renames (including HA device renames that
+# propagate), while the light itself is untouched. Comparing it turns every
+# rename into a permanent mismatch, so it is always skipped.
+ALWAYS_IGNORED_ATTRS = frozenset({"friendly_name"})
+
 
 def _num_close(a: Any, b: Any, tol: float) -> bool:
     try:
@@ -44,7 +50,7 @@ def entity_matches(
     unavailable/missing but ignore_unavailable is on, so it neither
     matches nor mismatches (mirrors scene_state 'unknown' handling).
     """
-    ignore = set(ignore_attrs or ())
+    ignore = set(ignore_attrs or ()) | ALWAYS_IGNORED_ATTRS
     exp_state = expected.get("state")
 
     if actual_state in (None, "unavailable", "unknown", ""):
@@ -94,7 +100,7 @@ def diff_entity(
     differs. Empty means match (or unknown-but-ignored). Mirrors
     entity_matches exactly, so the two can never disagree.
     """
-    ignore = set(ignore_attrs or ())
+    ignore = set(ignore_attrs or ()) | ALWAYS_IGNORED_ATTRS
     diffs: dict[str, list] = {}
     exp_state = expected.get("state")
 

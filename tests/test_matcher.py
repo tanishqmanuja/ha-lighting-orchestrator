@@ -131,6 +131,22 @@ def test_learn_snapshot_skips_null_attrs():
     }
 
 
+def test_friendly_name_never_breaks_match():
+    # Renames change metadata, not light output: always ignored, even
+    # without user-configured ignore lists.
+    ok, _ = entity_matches(
+        {"state": "on", "brightness": 100, "friendly_name": "Old Name"},
+        "on",
+        {"brightness": 100, "friendly_name": "New Name"},
+    )
+    assert ok
+    assert diff_entity(
+        {"state": "on", "friendly_name": "Old Name"},
+        "on",
+        {"friendly_name": "New Name"},
+    ) == {}
+
+
 def test_diff_entity_names_failing_attrs():
     assert diff_entity(
         {"state": "on", "brightness": 100}, "on", {"brightness": 100}
