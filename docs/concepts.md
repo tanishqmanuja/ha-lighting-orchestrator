@@ -41,7 +41,11 @@ just reports what is true right now:
   - `active`: the lights match a known mood, requested or otherwise.
   - `transitioning`: a request is still in flight, inside its settle window.
   - `custom`: nothing matches, so somebody changed lights outside HALO.
-    The engine never rewrites your selects over this. It only reports.
+     The engine never rewrites your selects over this. It only reports.
+- `sensor.halo_<area>_approximated_mood`: nearest mood by 0-100
+  `confidence`. Mirrors active when a known scene matches; when active is
+  `custom` the highest-scoring mood wins, or `custom` again when nothing
+  reaches 50.
 
 The status sensor also carries `mismatched_entities`, the full `mapping`
 of mood to preset to action, `default_presets`, and `area_name`.

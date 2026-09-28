@@ -65,6 +65,10 @@ LEGACY_DEFAULT_PRESET = "default"
 # Custom marker when no mood matches (display only)
 MOOD_CUSTOM = "custom"
 
+# Approximator: minimum 0-100 confidence for the nearest mood to win.
+# Below this, sensor.halo_<area>_approximated_mood stays custom too.
+APPROXIMATE_THRESHOLD = 50
+
 
 def halo_device_info(area_key: str, area_name: str):
     """Single DeviceInfo constructor for all HALO platforms."""

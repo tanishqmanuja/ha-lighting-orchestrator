@@ -1,4 +1,5 @@
-"""Read-only truth: active mood / preset / status (active|transitioning|custom)."""
+"""Read-only truth: active mood / preset / status (active|transitioning|custom),
+plus the approximated mood (nearest mood by 0-100 confidence, custom when unsure)."""
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
@@ -15,7 +16,12 @@ async def async_setup_entry(
 ) -> None:
     area = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
-        [HaloActiveMoodSensor(area), HaloActivePresetSensor(area), HaloStatusSensor(area)]
+        [
+            HaloActiveMoodSensor(area),
+            HaloActivePresetSensor(area),
+            HaloStatusSensor(area),
+            HaloApproximatedMoodSensor(area),
+        ]
     )
 
 
@@ -70,6 +76,29 @@ class HaloActivePresetSensor(_Base):
     @property
     def native_value(self) -> str:
         return self._area.engine.active_preset
+
+
+class HaloApproximatedMoodSensor(_Base):
+    @property
+    def unique_id(self) -> str:
+        return f"{self._area.area_key}_approximated_mood"
+
+    @property
+    def name(self) -> str:
+        return "Approximated mood"
+
+    @property
+    def native_value(self) -> str:
+        return self._area.engine.approx_mood
+
+    @property
+    def extra_state_attributes(self):
+        e = self._area.engine
+        return {
+            "confidence": e.approx_confidence,
+            "active_mood": e.active_mood,
+            "status": e.status,
+        }
 
 
 class HaloStatusSensor(_Base):

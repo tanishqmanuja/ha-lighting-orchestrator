@@ -52,6 +52,8 @@ against expected snapshots and reports `active` / `transitioning` / `custom`
 - `sensor.<area>_status`: `active|transitioning|custom`, attrs:
   `mismatched_entities`, `mapping` (mood→preset→action), `default_presets`,
   `area_name`, requested/active mirrors.
+- `sensor.<area>_approximated_mood`: nearest mood + `confidence` (0-100);
+  mirrors active when known, else top scorer or `custom` below 50.
 - `button.<area>_resync`: re-apply the request.
 
 ## Services (`halo.*`)
