@@ -231,7 +231,7 @@ export function AreaCard({ hass, area, onManage }: AreaCardProps) {
         </Button>
       </div>
 
-      {drift.length > 0 && (
+      {statusValue === "custom" && drift.length > 0 && (
         <div className="drift">
           <span className="drift-title">Manual changes detected</span>
           <span className="drift-list">{drift.join(" · ")}</span>
