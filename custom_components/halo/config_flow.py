@@ -52,35 +52,31 @@ def _validate_post_action(value: Any) -> str:
 
 
 def _format_preset(name: str, pcfg: dict | None) -> str:
-    """Render a preset back to `name=action[@verify]` (round-trips @ syntax)."""
-    from .const import normalize_verify
-
+    """Render a preset back to `name=action` (verify lives in the panel)."""
     if not isinstance(pcfg, dict) or not pcfg.get(CONF_ACTION):
         return name
-    verify = normalize_verify(pcfg.get(CONF_VERIFY))
-    suffix = ""
-    if verify["mode"] == "off":
-        suffix = "@off"
-    elif verify["mode"] == "scene":
-        suffix = f"@{verify['scene']}"
-    return f"{name}={pcfg[CONF_ACTION]}{suffix}"
+    return f"{name}={pcfg[CONF_ACTION]}"
 
 
-def _parse_presets(text: str) -> dict:
+def _parse_presets(text: str, *, keep_verify_from: dict | None = None) -> dict:
     """Parse `name=action[@verify]` pairs; bare names become unmapped presets.
 
-    The @verify suffix overrides verification for script actions especially:
-    `@off` trusts the apply (dynamic scripts), `@snapshot` learns live
-    states on first apply, `@scene.<id>` verifies the outcome against that
-    scene's targets. Absent = auto.
+    An explicit @verify suffix wins (`@off`, `@snapshot`, `@scene.<id>`,
+    `@auto`); otherwise a preset that already exists keeps its stored verify
+    mapping so an options-flow save never resets a panel-configured
+    `off`/`snapshot`/`scene` back to auto.
     """
     from .const import normalize_verify
 
+    keep = keep_verify_from or {}
     presets: dict = {}
     for chunk in [c.strip() for c in (text or "").split(",") if c.strip()]:
         if "=" in chunk:
             pname, action = [x.strip() for x in chunk.split("=", 1)]
-            verify = normalize_verify("")
+            prev_verify = (keep.get(pname) or {}).get(CONF_VERIFY)
+            verify = normalize_verify(
+                prev_verify if prev_verify is not None else ""
+            )
             if "@" in action:
                 # Entity ids never contain "@", so this must be verify syntax.
                 maybe_action, _, suffix = action.rpartition("@")
@@ -296,7 +292,9 @@ class HaloOptionsFlow(config_entries.OptionsFlow):
         )
         if user_input is None:
             return self.async_show_form(step_id="edit_mood", data_schema=schema)
-        presets2 = _parse_presets(user_input[PRESET_SPLIT])
+        presets2 = _parse_presets(
+            user_input[PRESET_SPLIT], keep_verify_from=cur.get(CONF_PRESETS, {})
+        )
         default2 = (user_input.get(CONF_DEFAULT_PRESET) or "").strip()
         errors2: dict[str, str] = {}
         if not presets2:
