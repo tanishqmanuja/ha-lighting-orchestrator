@@ -643,8 +643,7 @@ a.btn {
     --ha-card-background,
     var(--card-background-color, white)
   );
-  border: var(--ha-card-border-width, 1px) solid
-    var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+  border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
   border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px));
   padding: var(--ha-space-2, 8px);
 }
