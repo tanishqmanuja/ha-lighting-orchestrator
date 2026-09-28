@@ -140,7 +140,7 @@ export function AreaCard({ hass, area, onManage }: AreaCardProps) {
       <p className="label">Mood</p>
       <OptionButtons
         options={moods}
-        current={reqMood}
+        current={activeMood?.state ?? null}
         pending={pendingMood}
         disabled={busy}
         onPick={pickMood}

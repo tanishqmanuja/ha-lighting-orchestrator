@@ -768,6 +768,30 @@ describe("<halo-panel>", () => {
     expect(el.innerHTML).not.toContain("Manual changes detected");
   });
 
+  it("mood buttons highlight the live mood, not the requested one", async () => {
+    const hass = fakeHass();
+    hass.states["select.halo_living_room_mood"] = {
+      entity_id: "select.halo_living_room_mood",
+      state: "evening",
+      attributes: { options: ["evening", "movie"] },
+    };
+    hass.states["sensor.halo_living_room_active_mood"] = {
+      entity_id: "sensor.halo_living_room_active_mood",
+      state: "movie",
+      attributes: {},
+    };
+    const el = document.createElement("halo-panel") as HTMLElement & {
+      hass: HomeAssistant;
+    };
+    document.body.appendChild(el);
+    el.hass = hass;
+    await tick();
+    const buttons = [...el.querySelectorAll("button")];
+    const byText = (t: string) => buttons.find((b) => b.textContent === t)!;
+    expect(byText("movie").className).toContain("btn-default");
+    expect(byText("evening").className).not.toContain("btn-default");
+  });
+
   it("manage opens a separate page with back navigation", async () => {
     const hass = fakeHass();
     const el = document.createElement("halo-panel") as HTMLElement & {
