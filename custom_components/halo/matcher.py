@@ -136,6 +136,63 @@ def diff_entity(
     return diffs
 
 
+def score_snapshot(
+    expected_map: dict[str, dict[str, Any]],
+    states: dict[str, tuple[str | None, dict[str, Any]]],
+    *,
+    tolerance: float = 1.0,
+    ignore_attrs: list[str] | set[str] | tuple = (),
+    ignore_unavailable: bool = True,
+) -> float:
+    """0-100 similarity where on/off state outweighs all attributes combined.
+
+    Counts state agreements and attribute agreements separately: one state
+    hit scores a full point while every attribute of the whole snapshot
+    shares less than one point, so any state agreement beats any attribute
+    combination, and attributes only break state ties. Unknown (skipped)
+    entities count for neither side, mirroring snapshot_matches.
+    """
+    ignore = set(ignore_attrs or ()) | ALWAYS_IGNORED_ATTRS
+    state_hits = state_total = attr_hits = attr_total = 0
+    for entity_id, expected in expected_map.items():
+        actual = states.get(entity_id)
+        if actual is None or actual[0] in (None, "unavailable", "unknown", ""):
+            if ignore_unavailable:
+                continue
+            # Counted as a state miss with nothing comparable (mirrors the
+            # mismatch snapshot_matches reports here).
+            state_total += 1
+            continue
+        act_state, act_attrs = actual
+        exp_state = expected.get("state")
+        state_total += 1
+        if exp_state is None or act_state == exp_state:
+            state_hits += 1
+        for key, exp_val in expected.items():
+            if key == "state" or key in ignore:
+                continue
+            attr_total += 1
+            act_val = act_attrs.get(key)
+            if act_val is None:
+                if ignore_unavailable:
+                    attr_total -= 1
+                    continue
+                continue  # in total, not in hits: a miss
+            if isinstance(exp_val, (list, tuple)):
+                if _seq_close(exp_val, act_val, tolerance):
+                    attr_hits += 1
+            elif isinstance(exp_val, (int, float)):
+                if _num_close(exp_val, act_val, tolerance):
+                    attr_hits += 1
+            elif exp_val == act_val:
+                attr_hits += 1
+    if state_total == 0:
+        return 0.0
+    return 100 * (state_hits + attr_hits / (attr_total + 1)) / (
+        state_total + attr_total / (attr_total + 1)
+    )
+
+
 def diff_snapshot(
     expected_map: dict[str, dict[str, Any]],
     states: dict[str, tuple[str | None, dict[str, Any]]],

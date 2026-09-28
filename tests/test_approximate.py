@@ -131,3 +131,71 @@ def test_no_snapshots_stays_custom_at_zero():
     eng.apply_decision({"light.a": ("on", {})}, now=1060.0)
     assert eng.status == "custom"
     assert (eng.approx_mood, eng.approx_confidence) == ("custom", 0)
+
+
+def test_state_agreement_outweighs_attributes():
+    # "zebra" gets on/off right but brightness wrong; "apple" gets on/off
+    # wrong. State must win even though apple sorts first alphabetically.
+    eng = _engine_with(
+        {
+            ("zebra", "base"): {"light.x": {"state": "on", "brightness": 100}},
+            ("apple", "base"): {"light.x": {"state": "off"}},
+        }
+    )
+    eng.requested_mood, eng.requested_preset = "zebra", "base"
+    _at(eng, 1000.0)
+    eng.apply_decision({"light.x": ("on", {"brightness": 200})}, now=1060.0)
+    assert eng.status == "custom"
+    # zebra: state hit, brightness miss (67); apple: state miss (0).
+    assert (eng.approx_mood, eng.approx_confidence) == ("zebra", 67)
+
+
+def test_attributes_break_state_ties():
+    # Both moods agree with live on on/off for x and y and miss z, so
+    # states tie 2/3; only brightness differs, and it decides.
+    eng = _engine_with(
+        {
+            ("evening", "base"): {
+                "light.x": {"state": "on", "brightness": 100},
+                "light.y": {"state": "on"},
+                "light.z": {"state": "on"},
+            },
+            ("morning", "base"): {
+                "light.x": {"state": "on", "brightness": 200},
+                "light.y": {"state": "on"},
+                "light.z": {"state": "on"},
+            },
+        }
+    )
+    eng.requested_mood, eng.requested_preset = "evening", "base"
+    _at(eng, 1000.0)
+    live = {
+        "light.x": ("on", {"brightness": 200}),
+        "light.y": ("on", {}),
+        "light.z": ("off", {}),
+    }
+    eng.apply_decision(live, now=1060.0)
+    assert eng.status == "custom"
+    # evening 57, morning 71: morning wins on attributes alone.
+    assert (eng.approx_mood, eng.approx_confidence) == ("morning", 71)
+
+
+def test_attributes_scored_when_states_disagree():
+    # Both moods get on/off wrong; brightness still scores, but neither
+    # reaches the threshold so approximated stays custom.
+    eng = _engine_with(
+        {
+            ("evening", "base"): {
+                "light.x": {"state": "off", "brightness": 100}
+            },
+            ("morning", "base"): {
+                "light.x": {"state": "off", "brightness": 200}
+            },
+        }
+    )
+    eng.requested_mood, eng.requested_preset = "evening", "base"
+    _at(eng, 1000.0)
+    eng.apply_decision({"light.x": ("on", {"brightness": 200})}, now=1060.0)
+    assert eng.status == "custom"
+    # evening 0, morning 33: attrs differentiate, nobody wins.
+    assert (eng.approx_mood, eng.approx_confidence) == ("custom", 33)

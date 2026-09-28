@@ -48,7 +48,7 @@ try:
         STATUS_TRANSITIONING,
         pick_default_preset,
     )
-    from .matcher import diff_snapshot, snapshot_matches
+    from .matcher import diff_snapshot, score_snapshot, snapshot_matches
 except ImportError:  # loaded standalone in unit tests
     from const import (  # type: ignore[no-redef]
         APPROXIMATE_THRESHOLD,
@@ -70,7 +70,7 @@ except ImportError:  # loaded standalone in unit tests
         STATUS_TRANSITIONING,
         pick_default_preset,
     )
-    from matcher import diff_snapshot, snapshot_matches  # type: ignore[no-redef]
+    from matcher import diff_snapshot, score_snapshot, snapshot_matches  # type: ignore[no-redef]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -325,39 +325,34 @@ class AreaEngine:
         """Nearest mood + 0-100 confidence for the approximated-mood sensor.
 
         A non-custom active mood mirrors reality at 100. Otherwise every
-        snapshot scores its entity match fraction (best preset wins per
-        mood; ties break alphabetically); the top mood wins only at or
-        above APPROXIMATE_THRESHOLD, else custom.
+        snapshot scores state-first similarity (best preset wins per mood;
+        ties break alphabetically); the top mood wins only at or above
+        APPROXIMATE_THRESHOLD, else custom.
         """
         if self.status != STATUS_CUSTOM and self.active_mood != MOOD_CUSTOM:
             return self.active_mood, 100
-        per_mood: dict[str, int] = {}
+        per_mood: dict[str, float] = {}
         for mood, preset in sorted(self.snapshots):
             snap = self.snapshots[(mood, preset)]
             if not snap:
                 continue
             tune = self.tuning_for(mood, preset)
-            ok, mism, _unk = snapshot_matches(
+            score = score_snapshot(
                 snap,
                 states,
                 tolerance=tune.tolerance,
                 ignore_attrs=tune.ignore_attrs,
                 ignore_unavailable=tune.ignore_unavailable,
             )
-            score = (
-                100
-                if ok
-                else round(100 * (len(snap) - len(mism)) / len(snap))
-            )
-            if score > per_mood.get(mood, -1):
+            if score > per_mood.get(mood, -1.0):
                 per_mood[mood] = score
-        top_mood, top_score = MOOD_CUSTOM, 0
+        top_mood, top_score = MOOD_CUSTOM, 0.0
         for mood in sorted(per_mood):
             if per_mood[mood] > top_score:
                 top_mood, top_score = mood, per_mood[mood]
         if top_score < APPROXIMATE_THRESHOLD:
-            return MOOD_CUSTOM, top_score
-        return top_mood, top_score
+            return MOOD_CUSTOM, round(top_score)
+        return top_mood, round(top_score)
 
     def apply_decision(
         self,

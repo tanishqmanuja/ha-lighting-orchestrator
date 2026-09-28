@@ -43,7 +43,8 @@ just reports what is true right now:
   - `custom`: nothing matches, so somebody changed lights outside HALO.
      The engine never rewrites your selects over this. It only reports.
 - `sensor.halo_<area>_approximated_mood`: nearest mood by 0-100
-  `confidence`. Mirrors active when a known scene matches; when active is
+  state-first `confidence` (on/off agreement outweighs all attributes).
+  Mirrors active when a known scene matches; when active is
   `custom` the highest-scoring mood wins, or `custom` again when nothing
   reaches 50.
 
