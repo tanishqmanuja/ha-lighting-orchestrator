@@ -12,8 +12,10 @@ from typing import Any
 # Metadata attributes that can never meaningfully verify lighting output.
 # friendly_name changes on renames (including HA device renames that
 # propagate), while the light itself is untouched. Comparing it turns every
-# rename into a permanent mismatch, so it is always skipped.
-ALWAYS_IGNORED_ATTRS = frozenset({"friendly_name"})
+# rename into a permanent mismatch, so it is always skipped. icon is the
+# same kind of device metadata (icon changes, custom card icons), never
+# light output.
+ALWAYS_IGNORED_ATTRS = frozenset({"friendly_name", "icon"})
 
 
 def _num_close(a: Any, b: Any, tol: float) -> bool:

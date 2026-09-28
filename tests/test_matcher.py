@@ -147,6 +147,22 @@ def test_friendly_name_never_breaks_match():
     ) == {}
 
 
+def test_icon_never_breaks_match():
+    # Icon is device metadata, not light output: always ignored like
+    # friendly_name, even without user-configured ignore lists.
+    ok, _ = entity_matches(
+        {"state": "on", "brightness": 100, "icon": "mdi:lamp"},
+        "on",
+        {"brightness": 100, "icon": "mdi:wall-sconce-flat"},
+    )
+    assert ok
+    assert diff_entity(
+        {"state": "on", "icon": "mdi:lamp"},
+        "on",
+        {"icon": "mdi:wall-sconce-flat"},
+    ) == {}
+
+
 def test_diff_entity_names_failing_attrs():
     assert diff_entity(
         {"state": "on", "brightness": 100}, "on", {"brightness": 100}
