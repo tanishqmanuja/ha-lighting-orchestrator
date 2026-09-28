@@ -66,6 +66,18 @@ LEGACY_DEFAULT_PRESET = "default"
 MOOD_CUSTOM = "custom"
 
 
+def halo_device_info(area_key: str, area_name: str):
+    """Single DeviceInfo constructor for all HALO platforms."""
+    from homeassistant.helpers.entity import DeviceInfo
+
+    return DeviceInfo(
+        identifiers={(DOMAIN, area_key)},
+        name=f"HALO {area_name}",
+        manufacturer="HALO",
+        model="Lighting Orchestrator",
+    )
+
+
 def pick_default_preset(
     presets: dict[str, Any] | list[str] | tuple,
     designated: str | None = None,

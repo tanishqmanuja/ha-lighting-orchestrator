@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, halo_device_info
 
 
 async def async_setup_entry(
@@ -33,10 +33,7 @@ class HaloResyncButton(ButtonEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._area.area_key)},
-            name=f"HALO {self._area.area_name}",
-        )
+        return halo_device_info(self._area.area_key, self._area.area_name)
 
     async def async_press(self) -> None:
         await self._area.async_resync()

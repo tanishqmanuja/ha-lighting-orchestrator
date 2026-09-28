@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, PRESET_NONE
+from .const import DOMAIN, PRESET_NONE, halo_device_info
 
 
 async def async_setup_entry(
@@ -25,12 +25,7 @@ class _Base:
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._area.area_key)},
-            name=f"HALO {self._area.area_name}",
-            manufacturer="HALO",
-            model="Lighting Orchestrator",
-        )
+        return halo_device_info(self._area.area_key, self._area.area_name)
 
     def _refresh_cb(self) -> None:
         try:
